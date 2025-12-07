@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Address</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0c0a1f;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95em;
+            color: #9b9ba7;
+        }
+
+        .ip-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .ip-card {
+            background: #1c1b32;
+            border: 1px solid #2d2b45;
+            border-radius: 12px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: border-color 0.3s;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .ip-card:hover {
+            border-color: #6d4aff;
+        }
+
+        .ip-label {
+            font-size: 0.8em;
+            color: #9b9ba7;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 18px;
+            font-weight: 500;
+        }
+
+        .ip-value {
+            font-size: 1.6em;
+            color: #ffffff;
+            font-weight: 500;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            letter-spacing: 0.5px;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .location {
+            font-size: 0.9em;
+            color: #9b9ba7;
+            min-height: 24px;
+        }
+
+        .loading-state {
+            font-size: 1.6em;
+            color: #6d4aff;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #2d2b45;
+            border-top: 2px solid #6d4aff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn {
+            background: #6d4aff;
+            border: none;
+            color: #ffffff;
+            padding: 14px 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(109, 74, 255, 0.3);
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+            background: #7c5cff;
+            box-shadow: 0 4px 12px rgba(109, 74, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .refresh-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .timestamp {
+            font-size: 0.85em;
+            color: #6c6a7e;
+            text-align: center;
+        }
+
+        .error {
+            color: #9b9ba7;
+            font-size: 0.85em;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .ip-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .ip-value {
+                font-size: 1.3em;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .refresh-btn {
+                padding: 12px 35px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h1>IP Address Checker</h1>
+                <div class="subtitle">Server vs Client comparison</div>
+            </div>
+
+            <div class="ip-grid">
+                <div class="ip-card">
+                    <div class="ip-label">Server IP</div>
+                    <div v-if="serverLoading" class="loading-state">
+                        <div class="spinner"></div>
+                    </div>
+                    <div v-else-if="serverData">
+                        <div class="ip-value">{{ serverData.ip }}</div>
+                        <div class="location">{{ serverLocation }}</div>
+                    </div>
+                    <div v-if="serverError" class="error">{{ serverError }}</div>
+                </div>
+
+                <div class="ip-card">
+                    <div class="ip-label">Client IP</div>
+                    <div v-if="clientLoading" class="loading-state">
+                        <div class="spinner"></div>
+                    </div>
+                    <div v-else-if="clientData">
+                        <div class="ip-value">{{ clientData.ip }}</div>
+                        <div class="location">{{ clientLocation }}</div>
+                    </div>
+                    <div v-if="clientError" class="error">{{ clientError }}</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button @click="refreshBoth" :disabled="isLoading" class="refresh-btn">
+                    {{ isLoading ? 'Refreshing...' : 'Refresh Both' }}
+                </button>
+            </div>
+
+            <div class="timestamp" v-if="lastUpdate">
+                Last updated {{ lastUpdate }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    serverData: null,
+                    clientData: null,
+                    serverLoading: false,
+                    clientLoading: false,
+                    serverError: null,
+                    clientError: null,
+                    lastUpdate: null
+                }
+            },
+            computed: {
+                isLoading() {
+                    return this.serverLoading || this.clientLoading;
+                },
+                serverLocation() {
+                    if (!this.serverData) return '';
+                    if (!this.serverData.city && !this.serverData.country) return '';
+                    const parts = [];
+                    if (this.serverData.city) parts.push(this.serverData.city);
+                    if (this.serverData.country) parts.push(this.serverData.country);
+                    return parts.join(', ');
+                },
+                clientLocation() {
+                    if (!this.clientData) return '';
+                    if (!this.clientData.city && !this.clientData.country) return '';
+                    const parts = [];
+                    if (this.clientData.city) parts.push(this.clientData.city);
+                    if (this.clientData.country) parts.push(this.clientData.country);
+                    return parts.join(', ');
+                }
+            },
+            methods: {
+                async fetchServerIP() {
+                    this.serverLoading = true;
+                    this.serverError = null;
+                    const startTime = Date.now();
+                    try {
+                        const response = await fetch('/api/server-ip');
+                        if (!response.ok) throw new Error('Failed to fetch server IP');
+                        this.serverData = await response.json();
+                    } catch (err) {
+                        this.serverError = err.message;
+                    } finally {
+                        const elapsed = Date.now() - startTime;
+                        const remaining = Math.max(0, 500 - elapsed);
+                        await new Promise(resolve => setTimeout(resolve, remaining));
+                        this.serverLoading = false;
+                    }
+                },
+                async fetchClientIP() {
+                    this.clientLoading = true;
+                    this.clientError = null;
+                    const startTime = Date.now();
+                    try {
+                        const response = await fetch('http://ip-api.com/json/');
+                        if (!response.ok) throw new Error('Failed to fetch client IP');
+                        const data = await response.json();
+                        if (data.status !== 'success') throw new Error('API error');
+                        this.clientData = {
+                            ip: data.query,
+                            city: data.city || '',
+                            country: data.country || ''
+                        };
+                    } catch (err) {
+                        this.clientError = err.message;
+                    } finally {
+                        const elapsed = Date.now() - startTime;
+                        const remaining = Math.max(0, 500 - elapsed);
+                        await new Promise(resolve => setTimeout(resolve, remaining));
+                        this.clientLoading = false;
+                    }
+                },
+                async refreshBoth() {
+                    await this.fetchServerIP();
+                    await this.fetchClientIP();
+                    this.updateTimestamp();
+                },
+                updateTimestamp() {
+                    const now = new Date();
+                    this.lastUpdate = now.toLocaleString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+            },
+            mounted() {
+                this.refreshBoth();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
