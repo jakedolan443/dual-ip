@@ -3,8 +3,8 @@ services:
     build:
       context: .
       network: host
-    container_name: ip-checker-client-server
-    image: ip-checker-client-server
+    container_name: dual-ip
+    image: dual-ip
     environment:
       - PORT=80
     restart: unless-stopped
