@@ -1,0 +1,15 @@
+services:
+  ip-checker:
+    build: .
+    container_name: ip-checker-app
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    networks:
+      - ip-checker-network
+
+networks:
+  ip-checker-network:
+    driver: bridge
